@@ -54,9 +54,10 @@ jobs:
       run: |
         timestamp=$(cat timestamp.txt)
         python ./src/evaluate_model.py --timestamp "$timestamp"
-        metrics_filename="${timestamp}_metrics.json"
-        mv $metrics_filename $GITHUB_WORKSPACE/metrics/$metrics_filename
-      continue-on-error: false  # Continue even if evaluation fails
+        metrics_filename="metrics/${timestamp}_metrics.json"
+        # Sanity check: confirm file exists
+        test -f "$metrics_filename" && echo "✅ Found $metrics_filename" || (echo "❌ Missing $metrics_filename"; ls -la metrics; exit 1)
+
     - name: Run unit tests
       run: |
         pytest -v test/test_model_training.py
@@ -64,17 +65,17 @@ jobs:
     - name: Store and Version the New Model
       run: |
         timestamp=$(cat timestamp.txt)
-        model_filename="model_${timestamp}_rf_model.joblib"
-        mv $model_filename $GITHUB_WORKSPACE/models/$model_filename
+        model_filename="models/model_${timestamp}_rf_model.joblib"
+        test -f "$model_filename" && echo "✅ Found $model_filename" || (echo "❌ Missing $model_filename"; ls -la models; exit 1)
 
     - name: Commit and Push Changes
       run: |
         git config --global user.email "priyankasenthil25@gmail.com"
         git config --global user.name "priyanka-senthil"
         timestamp=$(cat timestamp.txt)
-        metrics_filename="${timestamp}_metrics.json"
-        model_filename="model_${timestamp}_rf_model.joblib"
-        git add $GITHUB_WORKSPACE/metrics/$metrics_filename $GITHUB_WORKSPACE/models/$model_filename
+        metrics_filename="metrics/${timestamp}_metrics.json"
+        model_filename="models/model_${timestamp}_rf_model.joblib"
+        git add "$metrics_filename" "$model_filename"
         git commit -m "Add metrics and updated model" || echo "No changes to commit"
         git push
       env:
