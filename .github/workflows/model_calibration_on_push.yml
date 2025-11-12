@@ -61,6 +61,7 @@ jobs:
     - name: Run unit tests
       run: |
         pytest -v test/test_model_training.py
+        pytest -v test/test_model_evaluation.py
 
     - name: Store and Version the New Model
       run: |
