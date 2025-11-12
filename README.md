@@ -1,102 +1,156 @@
-# Using GitHub Actions for Model Training and Versioning
+# 🧠 GitHub Lab 2 – Automated Model Retraining & Evaluation (CI/CD Pipeline)
 
-This repository demonstrates how to use GitHub Actions to automate the process of training a machine learning model, storing the model, and versioning it. This allows you to easily update and improve your model in a collaborative environment.
+## ⚙️ Overview
 
-Watch the tutorial video for this lab at [Github action Lab2](https://youtu.be/cj5sXIMZUjQ)
+This lab demonstrates a **complete MLOps CI/CD workflow** for retraining, evaluating, testing, and versioning a machine-learning model directly through **GitHub Actions**.
 
+Each time code is pushed to the `main` branch (or triggered manually), the pipeline:
 
-## Prerequisites
+1. Cleans old artifacts
+2. Retrains a Random Forest classifier on the Breast Cancer dataset
+3. Evaluates the model and logs metrics
+4. Runs automated tests
+5. Commits new model and metrics back to the repository
 
-- [GitHub](https://github.com) account
-- Basic knowledge of Python and machine learning
-- Git command-line tool (optional)
+---
 
-## Getting Started
+## 🧩 Pipeline Highlights
 
-1. **Fork this Repository**: Click the "Fork" button at the top right of this [repository](https://github.com/raminmohammadi/MLOps/) to create your own copy.
-3. **Clone Your Repository**:
-   ```bash
-   git clone https://github.com/your-username/your-forked-repo.git
-   cd your-forked-repo
+**Workflow:** `.github/workflows/model_calibration_on_push.yml`
 
-   ```
-4. GitHub account
-5. Basic knowledge of Python and machine learning
-6. Git command-line tool (optional)
+Key stages:
+```bash
+1️⃣ Checkout code
+2️⃣ Install dependencies
+3️⃣ Generate timestamp for artifacts
+4️⃣ Clean old artifacts (models, metrics, data)
+5️⃣ Retrain model → saves model_<timestamp>_rf_model.joblib
+6️⃣ Evaluate model → creates metrics/<timestamp>_metrics.json
+7️⃣ Run unit tests for training & evaluation
+8️⃣ Commit & push new artifacts to GitHub
+```
 
-# Running the Workflow
-## Customize Model Training
-1. Modify the `train_model.py` script in the `src/` directory according to your dataset and model requirements. This script generates synthetic data for demonstration purposes.
+---
 
-## Push Your Changes:
-1. Commit your changes and push them to your forked repository.
+## 🧪 Major Code Enhancements
 
-## GitHub Actions Workflow:
-1. Once you push changes to the main branch, the GitHub Actions workflow will be triggered automatically.
+| Area                   | Original                                             | Modified / Improved                                                              |
+| ---------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Dataset**            | Used `make_classification()` (random synthetic data) | Replaced with real `sklearn.datasets.load_breast_cancer()` dataset               |
+| **Model Type**         | DecisionTreeClassifier                               | Upgraded to **RandomForestClassifier**                                           |
+| **Timestamp Handling** | Hardcoded / manual                                   | Dynamic timestamp generation per run                                             |
+| **File Organization**  | Artifacts scattered                                  | Standardized directories: `models/`, `metrics/`, `data/`                         |
+| **Evaluation Script**  | Printed metrics only                                 | Saves clean JSON file: `metrics/<timestamp>_metrics.json`                        |
+| **Testing**            | None                                                 | Added full **pytest** coverage: training + evaluation tests                      |
+| **GitHub Actions**     | Single push trigger                                  | Added: cleanup, tests, re-scoped variables, manual trigger (`workflow_dispatch`) |
+| **Artifact Hygiene**   | Old files persisted between runs                     | Added `Clean old artifacts` step to prevent shape mismatches                     |
+| **Automation**         | Manual execution                                     | Full CI/CD retraining pipeline with commit automation                            |
 
-## View Workflow Progress:
-1. You can track the progress of the workflow by going to the "Actions" tab in your GitHub repository.
+---
 
-## Retrieve the Trained Model:
-1. After the workflow completes successfully, the trained model will be stored in the `models/` directory.
+## 🧪 Tests Added
 
-# Model Evaluation
-The model evaluation is performed automatically within the GitHub Actions workflow. The evaluation results (e.g., F1 Score) are stored in the `metrics/` directory.
+**1️⃣ `test/test_model_training.py`**
 
-# Versioning the Model
-Each time you run the workflow, a new version of the model is created and stored. You can access and use these models for your projects.
+* Verifies trained model exists
+* Checks predictions match expected shape
 
-# GitHub Actions Workflow Details
-The workflow consists of the following steps:
+**2️⃣ `test/test_evaluate_model.py`**
 
-- Generate and Store Timestamp: A timestamp is generated and stored in a file for versioning.
-- Model Training: The `train_model.py` script is executed, which trains a random forest classifier on synthetic data and stores the model in the `models/` directory.
-- Model Evaluation: The `evaluate_model.py` script is executed to evaluate the model's F1 Score on synthetic data, and the results are stored in the `metrics/` directory.
-- Store and Version the New Model: The trained model is moved to the `models/` directory with a timestamp-based version.
-- Commit and Push Changes: The metrics and updated model are committed to the repository, allowing you to track changes.
+* Confirms metrics JSON file generation
+* Validates metric keys (`accuracy`, `f1_score`)
+* Ensures metric values are within 0–1 range
+* Supports re-evaluation on existing models
 
-# Model Calibration Workflow
-## Overview
-The `model_calibration_on_push.yml` workflow is a part of the automation process for machine learning model calibration within this repository. It is essential for ensuring that the model's predictions are accurate and well-calibrated, a critical step in machine learning applications.
+---
 
-## Workflow Purpose
-This workflow's primary purpose is to calibrate a trained machine learning model after each push to the main branch of the repository. Calibration is a crucial step to align model predictions with reality, particularly when dealing with classification tasks. In simple terms, calibration ensures that a model's predicted probabilities match the actual likelihood of an event happening.
+## 🚀 Example CI/CD Run (Successful Log)
+```bash
+✅ Retrain Model
+Timestamp received from GitHub Actions: 20251112185444
+Model saved → models/model_20251112185444_rf_model.joblib
+✅ Training complete.
 
-## Workflow Execution
-Let's break down how this workflow operates step by step:
+✅ Evaluate Model and Log Metrics
+Evaluating model for timestamp 20251112185444
+✅ Metrics saved → metrics/20251112185444_metrics.json
+✅ Verified metrics file.
 
-### Step 1: Trigger on Push to Main Branch
-- This workflow is automatically initiated when changes are pushed to the main branch of the repository. It ensures that the model remains calibrated and up-to-date with the latest data and adjustments.
+✅ Run Unit Tests
+All 4 tests passed in 1.04s ✅
 
-### Step 2: Prepare Environment
-- The workflow begins by setting up a Python environment and installing the necessary Python libraries and dependencies. This is crucial to ensure that the model calibration process can be executed without any issues.
+✅ Commit & Push Changes
+[main abc123] Add metrics and updated model
+2 files changed, 3 insertions(+)
+```
 
-### Step 3: Load Trained Model
-- The trained machine learning model, which has been previously saved in the `models/` directory, is loaded into memory. This model should be the most recent version, as trained by the `train_model.py` script.
+---
 
-### Step 4: Calibrate Model Probabilities
-- In this step, the model's predicted probabilities are calibrated. Calibration methods, such as Platt scaling or isotonic regression, are applied. These methods adjust the model's predicted probabilities to match the actual likelihood of an event occurring. This calibration step is critical for reliable decision-making based on the model's predictions.
+## 📁 Final Repository Structure
+```
+Github_Lab2/
+├── .github/workflows/
+│   ├── model_calibration_on_push.yml
+│   └── model_calibration.yml
+├── src/
+│   ├── train_model.py
+│   ├── evaluate_model.py
+│   └── __init__.py
+├── test/
+│   ├── test_model_training.py
+│   ├── test_evaluate_model.py
+│   └── __init__.py
+├── models/
+├── metrics/
+├── data/
+├── .env
+├── .gitignore
+├── README.md
+└── requirements.txt
+```
 
-### Step 5: Save Calibrated Model
-- The calibrated model is saved back to the `models/` directory. It is given a distinct identifier to differentiate it from the original, uncalibrated models. This ensures that both the original model and the calibrated model are available for comparison and use.
+---
 
-### Step 6: Commit and Push Changes
-- This final step involves committing the calibrated model and any other relevant files to the repository. It is essential to keep track of the changes made during the calibration process and to store the calibrated model in the repository for future applications and reference.
+## 🧠 How to Run Locally
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
 
-# Customization
-The `model_calibration_on_push.yml` workflow can be customized to align with your specific project requirements. You can modify calibration methods, the directory where the calibrated model is saved, or any other aspects of the calibration process to meet your project's unique needs.
+# 2. Train model manually
+timestamp=$(date '+%Y%m%d%H%M%S')
+python src/train_model.py --timestamp "$timestamp"
 
-# Integration with Model Training
-This workflow is designed to work seamlessly with the main model training workflow, `model_retraining_on_push.yml`. In the initial workflow, the model is trained, and in this workflow, the calibrated model is generated. The calibrated model can then be used in applications where precise, well-calibrated probabilities are essential.
+# 3. Evaluate model
+python src/evaluate_model.py --timestamp "$timestamp"
 
-# License
-This project is licensed under the MIT License - see the LICENSE file for details.
+# 4. Run tests
+pytest -v test/
+```
 
-# Acknowledgments
-- This project uses GitHub Actions for continuous integration and deployment.
-- Model training and evaluation are powered by Python and scikit-learn.
+---
 
-# Questions or Issues
-If you have any questions or encounter issues while using this GitHub Actions workflow, please open an issue in the Issues section of your repository.
+## ⚡ Triggering the Workflow
 
-# Github_Lab2
+* **Automatic:** on every push to `main`
+* **Manual:** via the "Run workflow" button under *Actions → Model Retraining on Push to Main*
+
+---
+
+## 🏁 Outcome
+
+After each successful run:
+
+* New model and metrics are saved in their respective folders
+* JSON metrics are versioned
+* Tests validate performance and structure
+* Artifacts are committed automatically to the repo
+
+✅ **Fully reproducible, tested, and version-controlled ML retraining workflow.**
+
+---
+
+**Author:** *Priyanka Senthil*  
+**Updated:** November 2025  
+**Environment:** Python 3.9 | scikit-learn | MLflow | GitHub Actions | Pytest
+
+---
