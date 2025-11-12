@@ -3,7 +3,8 @@ name: Model Retraining on Push to Main
 on:
   push:
     branches:
-      - main  # Trigger the workflow on pushes to the main branch
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -38,33 +39,43 @@ jobs:
 
     - name: Set File Permissions
       run: |
-        chmod +x ./src/train_model.py #making it executable
+        chmod +x ./src/train_model.py
+
+    - name: Clean old artifacts
+      run: |
+        rm -rf models data metrics
 
     - name: Retrain Model
       run: |
-        timestamp=$(cat timestamp.txt) # Use the timestamp in your training script
+        timestamp=$(cat timestamp.txt)
         python ./src/train_model.py --timestamp "$timestamp"
 
     - name: Evaluate Model and Log Metrics
       run: |
-        timestamp=$(cat timestamp.txt) # Use the timestamp in your training script
-        python ./src/evaluate_model.py  --timestamp "$timestamp" # Assuming you have a script for model evaluation
+        timestamp=$(cat timestamp.txt)
+        python ./src/evaluate_model.py --timestamp "$timestamp"
         metrics_filename="${timestamp}_metrics.json"
         mv $metrics_filename $GITHUB_WORKSPACE/metrics/$metrics_filename
       continue-on-error: false  # Continue even if evaluation fails
+    - name: Run unit tests
+      run: |
+        pytest -v test/test_model_training.py
 
     - name: Store and Version the New Model
       run: |
         timestamp=$(cat timestamp.txt)
-        model_filename="model_${timestamp}_dt_model.joblib"
+        model_filename="model_${timestamp}_rf_model.joblib"
         mv $model_filename $GITHUB_WORKSPACE/models/$model_filename
 
     - name: Commit and Push Changes
       run: |
         git config --global user.email "priyankasenthil25@gmail.com"
         git config --global user.name "priyanka-senthil"
+        timestamp=$(cat timestamp.txt)
+        metrics_filename="${timestamp}_metrics.json"
+        model_filename="model_${timestamp}_rf_model.joblib"
         git add $GITHUB_WORKSPACE/metrics/$metrics_filename $GITHUB_WORKSPACE/models/$model_filename
-        git commit -m "Add metrics and updated model"
+        git commit -m "Add metrics and updated model" || echo "No changes to commit"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
