@@ -16,6 +16,7 @@ if __name__=='__main__':
     try:
         model_version = f'model_{timestamp}_dt_model'  # Use a timestamp as the version
         model = joblib.load(f'{model_version}.joblib')
+        print("working fine")
     except:
         raise ValueError('Failed to catching the latest model')
         
