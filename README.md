@@ -83,6 +83,9 @@ All 4 tests passed in 1.04s ✅
 [main abc123] Add metrics and updated model
 2 files changed, 3 insertions(+)
 ```
+## Screenshots
+
+<img width="1510" height="819" alt="Screenshot 2025-11-12 at 2 19 38 PM" src="https://github.com/user-attachments/assets/b7073f56-4c85-4a8e-a6f3-478e6821f7e3" />
 
 ---
 
